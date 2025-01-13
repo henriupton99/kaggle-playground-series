@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "kaggle-playground-series"
+version = "0.1.0"
+description = "Kaggle Playground Series (ML Practice)"
+authors = ["henriupton99 <henriupton99@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pytest = "^8.3.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
