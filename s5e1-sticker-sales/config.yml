@@ -1,0 +1,10 @@
+paths:
+  inputs: ./data/inputs
+  results: ./data/results
+
+hparams:
+  boosting_type: gbdt
+  metric: rmse
+  learning_rate: 0.005
+  verbose: 0
+  num_iterations: 1000
