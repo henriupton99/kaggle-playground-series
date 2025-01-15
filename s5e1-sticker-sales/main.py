@@ -16,7 +16,7 @@ for dtype in ['train', 'test']:
   data[dtype] = Dataset(
     path=path,
     index_col='id',
-    date_cols=['date'],
+    date_col='date',
     factor_cols=['country', 'store', 'product'],
     target_col='num_sold' if dtype == 'train' else None
   )
@@ -28,6 +28,9 @@ X_test = data['test'].features
 
 model = Model(config['hparams'])
 model.train(X_train, y_train, X_val, y_val)
+
+##progression = model.get_progression()
+#print(progression.head())
 
 y_pred = model.predict(X_test)
 

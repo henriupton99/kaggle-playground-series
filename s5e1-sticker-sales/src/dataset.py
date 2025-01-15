@@ -6,16 +6,29 @@ from dataclasses import dataclass
 class Dataset:
   path: str
   index_col: str
-  date_cols: list[str]
+  date_col: list[str]
   factor_cols: list[str]
   target_col: str|None
+  #lag_days: list[int]|None
   
   def __post_init__(self):
     self.dtype = 'test' if self.target_col is None else 'train'
-    self.content = pd.read_csv(self.path, parse_dates=self.date_cols, index_col=self.index_col)
+    self.content = pd.read_csv(self.path, parse_dates=[self.date_col], index_col=self.index_col)
     for colname in self.factor_cols:
       self.content[colname] = pd.factorize(self.content[colname])[0]
-    self.features = self.content.drop(self.date_cols, axis=1)
+      #for lag in self.lag_days:
+      #  self.content[f'lag_target_{lag}'] = self.content[self.target_col].shift(lag)
+    self.content['doy'] = self.content[self.date_col].dt.dayofyear
+    self.content['mon'] = self.content[self.date_col].dt.month
+    self.content['dow'] = self.content[self.date_col].dt.dayofweek
+    self.content['woy'] = self.content[self.date_col].dt.isocalendar().week
+    self.content['is_we'] = self.content['dow'].isin([5, 6]).astype(int)
+    
+    #for window in [7, 30]:
+      #train_dataset.features[f'rolling_mean_{window}'] = train_dataset.targets.shift(1).rolling(window=window).mean()
+      #train_dataset.features[f'rolling_std_{window}'] = train_dataset.targets.shift(1).rolling(window=window).std()
+
+    self.features = self.content.drop([self.date_col], axis=1)
     if self.dtype == 'train':
       self.features, self.targets = self.features.drop([self.target_col], axis=1), self.content[self.target_col]
   
