@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 from dataclasses import dataclass
 
 @dataclass
@@ -9,28 +10,37 @@ class Dataset:
   date_col: list[str]
   factor_cols: list[str]
   target_col: str|None
-  #lag_days: list[int]|None
   
   def __post_init__(self):
     self.dtype = 'test' if self.target_col is None else 'train'
     self.content = pd.read_csv(self.path, parse_dates=[self.date_col], index_col=self.index_col)
     for colname in self.factor_cols:
       self.content[colname] = pd.factorize(self.content[colname])[0]
-      #for lag in self.lag_days:
-      #  self.content[f'lag_target_{lag}'] = self.content[self.target_col].shift(lag)
-    self.content['doy'] = self.content[self.date_col].dt.dayofyear
-    self.content['mon'] = self.content[self.date_col].dt.month
-    self.content['dow'] = self.content[self.date_col].dt.dayofweek
-    self.content['woy'] = self.content[self.date_col].dt.isocalendar().week
-    self.content['is_we'] = self.content['dow'].isin([5, 6]).astype(int)
+    self.content['year'] = self.content[self.date_col].dt.year
+    self.content['month'] = self.content[self.date_col].dt.month
+    self.content['day_of_year'] = self.content[self.date_col].dt.dayofyear
     
-    #for window in [7, 30]:
-      #train_dataset.features[f'rolling_mean_{window}'] = train_dataset.targets.shift(1).rolling(window=window).mean()
-      #train_dataset.features[f'rolling_std_{window}'] = train_dataset.targets.shift(1).rolling(window=window).std()
-
+    self.content["year_sin"] = np.sin(2 * np.pi * self.content["year"]/3)
+    self.content["year_cos"] = np.cos(2 * np.pi * self.content["year"]/3)
+    self.content["month_sin"] = np.sin(2 * np.pi * self.content["month"] / 12.0)
+    self.content["month_cos"] = np.cos(2 * np.pi * self.content["month"] / 12.0)
+    self.content['day_sin'] = np.sin(2 * np.pi + self.content['day_of_year']  / 365.0)
+    self.content['day_cos'] = np.cos(2 * np.pi + self.content['day_of_year'] / 365.0)
+    
+    self.content = self.content.drop(['year', 'month', 'day_of_year'], axis=1)
     self.features = self.content.drop([self.date_col], axis=1)
     if self.dtype == 'train':
+      self.content[self.target_col] = self.content[self.target_col].bfill()
+      self.content[self.target_col] = np.log(self.content[self.target_col])
       self.features, self.targets = self.features.drop([self.target_col], axis=1), self.content[self.target_col]
+  
+  def get_country(self, country):
+    indexes_country = self.features[self.features['country'] == country].index
+    features = self.features.loc[indexes_country]
+    if self.dtype == 'train':
+      targets = self.targets.loc[indexes_country]
+      return features, targets
+    return features
   
   def __len__(self):
     return len(self.content)
@@ -40,9 +50,3 @@ class Dataset:
       f'Length : {self.__len__()}\n' +\
       f'Features : {list(self.features.columns)}\n'
     return _repr
-
-if __name__ == '__main__':
-  data_path = '/Users/henriup/Desktop/kaggle-playground-series/s5e1-sticker-sales/data'
-  train_path = os.path.join(data_path, 'train.csv')
-  train_df = Dataset(path=train_path, index_col='id', date_cols=['date'], factor_cols=['country', 'store', 'product'], target_col='num_sold')
-  print(train_df)

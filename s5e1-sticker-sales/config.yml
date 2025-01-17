@@ -5,6 +5,5 @@ paths:
 hparams:
   boosting_type: gbdt
   metric: rmse
-  learning_rate: 0.005
-  n_estimators: 1000
-  verbose: 4
+  objective: regression
+  n_estimators: 5000
